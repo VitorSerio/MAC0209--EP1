@@ -1,6 +1,6 @@
 ## MAC0209 - Exercício Programa 1
 
-*Explicação para os nomes dos arquivos 'acXXXX'*:
+**Explicação para os nomes dos arquivos 'acXXXX'**:
 
 - Primeiro dígito:
     - 0 = MRU
