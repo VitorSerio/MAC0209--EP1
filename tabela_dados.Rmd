@@ -1,0 +1,35 @@
+---
+title: "MAC0209 - Tabela de Dados"
+date: "15 mar 2018"
+output: pdf_document
+---
+
+P1 = __________________ P2 = __________________ P3 = __________________
+
+```{r, echo=FALSE, message=FALSE}
+
+library("dplyr")
+library("kableExtra")
+library("knitr")
+
+tipos <- c("MRU", "MRUV")
+deslocado <- c(FALSE, TRUE)
+pessoas <- c("P1", "P2", "P3")
+travessias <- c("T1", "T2")
+distancias <- list("não_deslocado" = c(10, 20, 30), "deslocado" = c(5, 10, 15, 20, 25, 30))
+
+data <- data.frame(Tipo = as.factor(rep(tipos, each = 54)),
+                   Deslocado = rep(rep(deslocado, c(36, 18)), 2),
+                   Pessoa = as.factor(rep(c(rep(pessoas, each = 12),
+                                            rep(pessoas, each = 6)), 2)),
+                   Travessia = as.factor(rep(c(rep(rep(travessias, each = 6), 3),
+                                               rep(travessias[1], 18)), 2)),
+                   Distancia = rep(c(rep(rep(distancias[["não_deslocado"]], each = 2), 6),
+                                     rep(distancias[["deslocado"]], 3)), 2),
+                   Tempo = character(108))
+
+kable(data, format = "latex", longtable = T, booktabs = T, align = "c",
+                  linesep = c("", "", "", "", "", "\\hline")) %>%
+    kable_styling(latex_options = c("striped", "repeat_header"), full_width = T, font_size = 12)
+```
+
