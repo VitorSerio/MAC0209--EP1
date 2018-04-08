@@ -1,0 +1,19 @@
+###################################Modelo a Seguir#######################################################
+
+Introdução. Resumidamente resumir a natureza do sistema físico, o método numérico básico ou algoritmo, e as questões interessantes ou relevantes.
+
+Método. Descreva o algoritmo e como ele é implementado no programa. Em alguns casos isso explicação pode ser dada no próprio programa. Dê uma lista típica do seu programa. Modificações simples do programa podem ser incluídas em um apêndice, se necessário. o programa deve incluir seu nome e data e ser anotado de uma forma que seja tão auto- explicativo quanto possível. Certifique-se de discutir quaisquer características importantes do seu programa.
+
+Verificação do programa. Confirme se o seu programa não está incorreto considerando casos especiais e dando pelo menos uma comparação com um cálculo manual ou um resultado conhecido.
+
+Dados. Mostra os resultados de algumas execuções típicas em forma gráfica ou tabular. Corridas adicionais podem ser incluído em um apêndice. Todas as corridas devem ser rotuladas, e todas as tabelas e figuras devem ser referido no corpo do texto. Cada figura e tabela deve ter uma legenda com informações completas, por exemplo, o valor do intervalo de tempo.
+
+Análise. Em geral, a análise dos seus resultados incluirá uma determinação qualitativa e relações quantitativas entre variáveis e uma estimativa da precisão numérica.
+
+Interpretação. Resuma seus resultados e explique-os em termos físicos simples sempre possível. Questões específicas que foram levantadas na tarefa devem ser abordadas aqui. Também dê sugestões para trabalhos futuros ou possíveis extensões. Não é necessário responder cada parte de cada pergunta no texto.
+
+Crítica Resuma os conceitos físicos importantes para os quais você obteve uma melhor compreensão de pé e discutir as técnicas numéricas ou de computador que você aprendeu. Torne específico comentários sobre a tarefa e sugestões de melhorias ou alternativas.
+
+Registro. Mantenha um registro do tempo gasto em cada tarefa e inclua-o no seu relatório.
+
+##########################################################################################################
