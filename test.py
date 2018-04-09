@@ -47,171 +47,130 @@ def arruma_tempos(raw_data):
             
     return data
 
-def calc_vel_ac_1(data):
+def calc_vel(data):
     # Calculando, ponto a ponto, as variações de espaço (ds), tempo (dt)
     # e velocidade (dv) e as velocidade e aceleração médias (vm e am)
-    data['v'] = 0.0
-    data['vm'] = 0.0
-    data['a'] = 0.0
-    data['am'] = 0.0
-    data['agm'] = 0.0
+    data['Velocidade'] = 0.0
 
-    movimentos = data['Tipo'].unique()
-    deslocado = data['Deslocado'].unique()
-    pessoa = data['Pessoa'].unique()
-    travessia = data['Travessia'].unique()
+    index = data.index.values
 
-    for m in movimentos:
-        for p in pessoa:
-            for d in deslocado:
-                for t in travessia:
+    for i in index:
+        data.at[i, 'Velocidade'] = data.at[i, 'Distancia'] / data.at[i, 'Tempo']
 
-                    if d and t == 'T2':
-                        continue
-
-                    M = data['Tipo'] == m
-                    D = data['Deslocado'] == d
-                    P = data['Pessoa'] == p
-                    T = data['Travessia'] == t
-
-                    index = data[M & D & P & T].index.values
-
-                    for i in index:
-                        data.at[i, 'v'] = data.at[i, 'Distancia'] / data.at[i, 'Tempo']
-                        data.at[i, 'a'] = 2 * data.at[i, 'Distancia'] / (data.at[i, 'Tempo'] ** 2)
-                    
-            index = data[M & P].index.values
-            
-            vm = data.loc[index, 'v'].mean()
-            data.loc[index, 'vm'] = vm
-            am = data.loc[index, 'a'].mean()
-            data.loc[index, 'am'] = am
-            
-        index = data[M].index.values
-        
-        agm = data.loc[index, 'a'].mean()
-        data.loc[index, 'agm'] = agm
-    
-    
     return data
 
-def calc_vel_ac_3(data):
-     # Calculando, ponto a ponto, as variações de espaço (ds), tempo (dt)
-    # e velocidade (dv) e as velocidade e aceleração médias (vm e am)
-    data['v'] = 0.0
-    data['vm'] = 0.0
-    data['a'] = 0.0
-    data['am'] = 0.0
-    data['agm'] = 0.0
-
-    movimentos = data['Tipo'].unique()
-    deslocado = data['Deslocado'].unique()
-    pessoa = data['Pessoa'].unique()
-    travessia = data['Travessia'].unique()
-
-    for m in movimentos:
-        for p in pessoa:
-            for d in deslocado:
-                for t in travessia:
-
-                    if d and t == 'T2':
-                        continue
-
-                    M = data['Tipo'] == m
-                    D = data['Deslocado'] == d
-                    P = data['Pessoa'] == p
-                    T = data['Travessia'] == t
-
-                    index = data[M & D & P & T].index.values
-
-                    for i in index:
-                        data.at[i, 'v'] = data.at[i, 'Distancia'] / data.at[i, 'Tempo']
-                        data.at[i, 'a'] = 2 * data.at[i, 'Distancia'] / (data.at[i, 'Tempo'] ** 2)
-                    
-            index = data[M & P].index.values
-            
-            vm = (data.loc[index, 'v'] * data.loc[index, 'Tempo']).sum() / data.loc[index, 'Tempo'].sum()
-            data.loc[index, 'vm'] = vm
-            am = (data.loc[index, 'a'] * data.loc[index, 'Tempo']).sum() / data.loc[index, 'Tempo'].sum()
-            data.loc[index, 'am'] = am
-            
-        index = data[M].index.values
+def calc_res(data):
+    def calc_vel_mru(data):
+        data = data[data['Tipo'] == 'MRU'].copy()
         
-        agm = (data.loc[index, 'a'] * data.loc[index, 'Tempo']).sum() / data.loc[index, 'Tempo'].sum()
-        data.loc[index, 'agm'] = agm
+        data['v'] = 0.0
+        
+        pessoa = data['Pessoa'].unique()
     
+        vel = []
+        for p in pessoa:
+            
+            df = data[data['Pessoa'] == p]
+            
+            vm = df['Velocidade'].mean()
+                
+            vel.append(vm)
+            
+        return vel
     
-    return data
+    def calc_ac_mruv(data, res):
+        data = data[data['Tipo'] == 'MRUV'].copy()
+        
+        #data['dv'] = 0.0
+        data['a'] = 0.0
+        data['v0'] = 0.0
+        res['v0'] = [0.55, 0.6, 0.7]
+        
+        
+        pessoa = data['Pessoa'].unique()
+    
+        for p in pessoa:
+            
+            P = data['Pessoa'] == p
+            
+            index = data[P].index.values
+                
+            v0 = res.at[p, 'v0']
+            
+            for i in index:
+                
+                si = data.at[i, 'Distancia']
+                ti = data.at[i, 'Tempo']
+                data.at[i, 'a'] = 2 * (si - v0 * ti) / (ti ** 2)
+                
+            res.at[p, 'am'] = data.loc[index, 'a'].mean()
+            
+        return res
+    
+    res = pd.DataFrame(index = data['Pessoa'].unique(), columns = ['vm', 'am', 'v0'])
+    
+    res['vm'] = calc_vel_mru(data)
+    res = calc_ac_mruv(data, res)
+    
+    res.loc['Geral'] = res.mean()
+    
+    return res
+    
     
 ###############################################################################
 # Funções para plotar os gráficos
-def plot_mru_pos(x, y, v, show = True):
-    
-    xmax = x.max()
-    
-    ymax = v * xmax
-    
-    plt.scatter(x, y)
-    plt.plot([0, xmax], [0, ymax], '--')
-    if show: plt.show()
 
-def plot_mruv_pos(x, y, a, show = True):
+def plot(data, res, m = 0, p = 1, v = 0, erro = True, show = False):
     
-    xmax = x.max()
+    def plot_data(x, y, a, b = 0, parab = False, show = True):
     
-    tx = np.linspace(0, xmax, 1000)
-    ty = (a * (tx ** 2)) / 2
+        def plot_line(x, y, a, b, show = True):
+            
+            xmax = x.max() + 5
+            ymax = a * xmax + b
+            
+            plt.scatter(x, y)
+            plt.plot([0, xmax], [b, ymax], '--')
+            if show: plt.show()
+            
+            return
     
-    plt.scatter(x, y)
-    plt.plot(tx, ty, '--')
-    if show: plt.show()    
-
-def plot_pos(data, x, y, tipo = 0, p = 1, show = True):
+        def plot_parab(x, y, a, b, show = True):
+            
+            xmax = x.max() + 5
+            
+            tx = np.linspace(0, xmax, 1000)
+            ty = (a * (tx ** 2)) / 2 + b * tx
+            
+            plt.scatter(x, y)
+            plt.plot(tx, ty, '--')
+            if show: plt.show()
+            
+            return   
     
-    mov = ['MRU', 'MRUV'][tipo]
-    pes = ['Geral', 'P1', 'P2', 'P3'][p]
+        if parab: plot_parab(x, y, a, b, show)
+        else: plot_line(x, y, a, b, show)
+        
+        return
     
-    P = data['Pessoa'] == pes if p > 0 else True
-    M = data['Tipo'] == mov
-      
-    df = data[M & P].loc[:, ['Distancia', 'Tempo', 'v', 'a', 'vm', 'am', 'agm']].copy()
-    df = df.reset_index(drop = True)
+    def plot_erro(x, y, a, b, parab = False, show = True):
+        
+        xmax = x.max() + 5
+        
+        if parab:
+            e = y - ((a * (x ** 2)) / 2 + (b * x))
+        else:
+            e = y - (a * x + b)
+        
+        plt.xlabel('Tempo')
+        plt.ylabel('Erro')
+        plt.scatter(x, e)
+        plt.plot([0, xmax], [0, 0], '--')
+        if show: plt.show()
+        
+        return
     
-    coef = df.at[0, 'vm'] if not tipo else df.at[0, 'am'] if p > 0 else df.at[0, 'agm']
-    
-    plt.title(('Espaço x Tempo', mov, pes))
-    plt.xlabel('Tempo')
-    plt.ylabel('Posição')
-    if tipo: plot_mruv_pos(df[x], df[y], coef, show)
-    else: plot_mru_pos(df[x], df[y], coef, show)
-
-def plot_vel(data, x, y, pes = 1, show = True):
-    
-    pes = ['Geral', 'P1', 'P2', 'P3'][pes]
-    
-    P = data['Pessoa'] == pes if p > 0 else True
-    M = data['Tipo'] == 'MRUV'
-    
-    df = data[M & P].copy()
-    df = df.reset_index(drop = True)
-    
-    df['Tempo'] = df['Tempo'] / 2
-    
-    coef = df.at[0, 'am'] if p > 0 else df.at[0, 'agm']
-    
-    tmax = df['Tempo'].max()
-    vmax = coef * tmax
-    
-    plt.title(('Velocidade x Tempo', 'MRUV', pes))
-    plt.xlabel('Tempo')
-    plt.ylabel('Velocidade')
-    plt.scatter(df[x], df[y])
-    plt.plot([0, tmax], [0, vmax], '--')
-    if show: plt.show()
-    
-def plot_erros(data, x, y, tipo = 0, p = 1, vel = False, show = True):
-    
-    mov = ['MRU', 'MRUV'][tipo]
+    mov = ['MRU', 'MRUV'][m]
     pes = ['Geral', 'P1', 'P2', 'P3'][p]
     
     P = data['Pessoa'] == pes if p > 0 else True
@@ -220,23 +179,28 @@ def plot_erros(data, x, y, tipo = 0, p = 1, vel = False, show = True):
     df = data[M & P].copy()
     df = df.reset_index(drop = True)
     
-    coef = df.at[0, 'vm'] if not tipo else df.at[0, 'am'] if p > 0 else df.at[0, 'agm']
+    x = 'Tempo'
+    plt.xlabel(x)
+    x = df[x] / 2 if v else df[x]
     
-    if vel:
-        df[x] = df[x] / 2
-        df['teor'] = coef * df[x]
+    y = 'Velocidade' if v else 'Distancia'
+    plt.ylabel(y)
+    y = df[y]
+    
+    a = res.at[pes, 'am'] if m else res.at[pes, 'vm']
+    b = res.at[pes, 'v0'] if m else 0
+    
+    parab = True if m and not v else False
+    
+    if erro:
+        plot_erro(x, y, a, b, parab, show)
+        
     else:
-        df['teor'] = coef * (df[x] ** 2) / 2 if tipo else coef * df[x] 
+        plt.title('Pessoa ' + str(p))
+        plot_data(x, y, a, b, parab, show)
+        
+    return
     
-    df['e'] = df[y] - df['teor']
-    
-    xmax = df[x].max()
-    
-    plt.xlabel('Tempo')
-    plt.ylabel('Erro')
-    plt.scatter(df[x], df['e'])
-    plt.plot([0, xmax], [0, 0], '--')
-    if show: plt.show()
 
 ###############################################################################
 ###############################################################################
@@ -245,7 +209,8 @@ raw_data = pd.read_csv("tempos.csv")
 
 # Arrumando os dados
 data = arruma_tempos(raw_data)
-data = calc_vel_ac_3(data)
+data = calc_vel(data)
+res = calc_res(data)
 
 # Plotando todos os gráficos de espaço por tempo
 
@@ -253,12 +218,11 @@ plt.figure(figsize = (15, 10), facecolor = '#FFFFFF')
 
 i = 1
 m = 0
-for t in [0, 1]:
+for erro in [False, True]:
     for p in [1, 2, 3]:
         
         plt.subplot(2, 3, i)
-        if t: plot_erros(data, 'Tempo', 'Distancia', m, p, show = False)
-        else: plot_pos(data, 'Tempo', 'Distancia', m, p, show = False)
+        plot(data, res, m, p, 0, erro)
         i += 1
 
 plt.show()
@@ -268,12 +232,11 @@ plt.figure(figsize = (15, 10), facecolor = '#FFFFFF')
 
 i = 1
 m = 1
-for t in [0, 1]:
+for erro in [False, True]:
     for p in [1, 2, 3]:
         
         plt.subplot(2, 3, i)
-        if t: plot_erros(data, 'Tempo', 'Distancia', m, p, show = False)
-        else: plot_pos(data, 'Tempo', 'Distancia', m, p, show = False)
+        plot(data, res, m, p, 0, erro)
         i += 1
 
 plt.show()
@@ -281,12 +244,11 @@ plt.show()
 plt.figure(figsize = (15, 10), facecolor = '#FFFFFF')
 
 i = 1
-for t in [0, 1]:
+for erro in [False, True]:
     for p in [1, 2, 3]:
         
         plt.subplot(2, 3, i)
-        if t: plot_erros(data, 'Tempo', 'v', 1, p, True, False)
-        else: plot_vel(data, 'Tempo', 'v', p, False)
+        plot(data, res, m, p, 1, erro)
         i += 1
 
 plt.show()
