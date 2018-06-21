@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from IPython.display import display
 import math
 
@@ -177,7 +178,7 @@ plt.show()
 
 ############### MCU ###############
 
-plt.figure(figsize = (25, 15), facecolor = '#FFFFFF')
+plt.figure(figsize = (25, 10), facecolor = '#FFFFFF')
 plt.suptitle('Valores experimentais para os experimentos de Movimento Circular Uniforme')
 for i in range(5):
     plt.subplot(3, 5, i+1)
@@ -194,7 +195,7 @@ plt.show()
 
 ############# Pêndulo #############
 
-plt.figure(figsize = (25, 10), facecolor = '#FFFFFF')
+plt.figure(figsize = (25, 15), facecolor = '#FFFFFF')
 plt.suptitle('Valores experimentais para os experimentos de Movimento Pendular')
 for i in range(5):
     plt.subplot(3, 5, i+1)
@@ -241,3 +242,4 @@ wc = np.mean(ce['w'])
 Bp = 0.2 * par * Ap * L / mp
 thetap0 = np.mean(theta0)
 Ap = g / L
+
