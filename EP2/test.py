@@ -43,8 +43,6 @@ def derivate(x, y, y0 = 0):
 #            DADOS               #
 ##################################
 #
-#
-## 00000 = dados faltando
 ## 'CHUTE' = valores que esquecemos (Vitor, principalmente) de coletar, então estão estimados e podem precisar de ajustes
 #
 #
@@ -70,9 +68,15 @@ for i in range(5):
 ############### MCU ###############
 R = 2.1                     # raio (m)
 t = pd.read_csv('mcu.csv')  # tabela com os dados dos tempos das voltas
+c = []                      # lista para armazenar os tempos medidos pra cada experimento
+
+for i in range(5):
+    c.append(t.loc[t['rep'] == i+1])
+    c[i] = c[i].reset_index()
+    c[i] = c[i].filter(items=['time', 'theta'])
 
 ############# Pêndulo #############
-l = 0.823                                # comprimento das cordas                     (m) - CHUTE!!
+l = 0.823                                # comprimento das cordas                    (m)
 a = 0.051                               # largura do cesto                           (m)
 b = 0.144                               # comprimento do cesto                       (m)
 L = math.sqrt(l**2 - (a/2)**2 - (b/2)**2)  # comprimento da corda imaginária do pêndulo (m)
@@ -115,16 +119,14 @@ for i in range(5):
 ############### MCU ###############
     
 for i in range(5):
-    k = 6*i
-    t['theta'][k] = 1*math.pi
-    t['theta'][k+1] = 2*math.pi
-    for j in range(2):
-        k += 2*j
-        t['theta'][k + 2] = 1*math.pi + t['theta'][k + 1]
-        t['theta'][k + 3] = 2*math.pi + t['theta'][k + 1]
-        t['temps'][k + 2] += t['temps'][k + 1]
-        t['temps'][k + 3] += t['temps'][k + 1]
-t['w'] = t['theta'] / t['temps']
+    c[i]['theta'][0] = 1*math.pi
+    c[i]['theta'][1] = 2*math.pi
+    for j in [2, 4]:
+        c[i]['theta'][j] = (j+1)*math.pi
+        c[i]['theta'][j+1] = (j+2)*math.pi
+        c[i]['time'][j] += c[i]['time'][j-1]
+        c[i]['time'][j+1] += c[i]['time'][j-1]
+    c[i]['w'] = derivate(c[i]['time'], c[i]['theta'], y0 = c[i]['theta'][0] / c[i]['time'][0])
     
 ############# Pêndulo #############
     
@@ -158,7 +160,6 @@ plt.suptitle('Valores experimentais para os experimentos de Bloco em Rampa')
 for i in range(5):
     plt.subplot(3, 5, i+1)
     plt.plot(r[i]['time'], r[i]['gFx'])
-    #
     plt.xlabel('Tempo (s)')
     plt.ylabel(r'Aceleração (m/s$^2$)')
     plt.title('r' + str(i+1))
@@ -179,15 +180,14 @@ plt.show()
 plt.figure(figsize = (25, 15), facecolor = '#FFFFFF')
 plt.suptitle('Valores experimentais para os experimentos de Movimento Circular Uniforme')
 for i in range(5):
-    ti = t.loc[t['rep'] == i+1]
     plt.subplot(3, 5, i+1)
-    plt.scatter(ti['temps'], ti['theta'])
+    plt.scatter(c[i]['time'], c[i]['theta'])
     plt.xlabel('Tempo (s)')
     plt.ylabel('Deslocamento (rad)')
     plt.title('c' + str(i+1))
     
     plt.subplot(3, 5, i+6)
-    plt.scatter(ti['temps'], ti['w'])
+    plt.scatter(c[i]['time'], c[i]['w'])
     plt.xlabel('Tempo (s)')
     plt.ylabel('Velocidade Angular (rad/s)')
 plt.show()
@@ -205,8 +205,6 @@ for i in range(5):
     
     plt.subplot(3, 5, i+6)
     plt.plot(p[i]['time'], p[i]['wx'])
-    #plt.plot([tmin_p[i], tmin_p[i]], [min(p[i]['wx']), max(p[i]['wx'])], color = 'C1')
-    #plt.plot([tmax_p[i], tmax_p[i]], [min(p[i]['wx']), max(p[i]['wx'])], color = 'C1')
     plt.xlabel('Tempo (s)')
     plt.ylabel('Velocidade Angular (rad/s)')
     
@@ -216,3 +214,30 @@ for i in range(5):
     plt.ylabel('Distância Angular (rad)')
 plt.show()
 
+##################################
+#             MODELO             #
+##################################
+
+re = r[0]
+ce = c[0]
+pe = p[0]
+
+for i in range(1,5):
+    re = re.append(r[i], ignore_index = True)
+    ce = ce.append(c[i], ignore_index = True)
+    pe = pe.append(p[i], ignore_index = True)
+
+########## Bloco em rampa #########
+
+Br = 0.2 * par * Ar / mr
+Ar = g * math.sin(thetar)
+
+############### MCU ###############
+
+wc = np.mean(ce['w'])
+
+############# Pêndulo #############
+
+Bp = 0.2 * par * Ap * L / mp
+thetap0 = np.mean(theta0)
+Ap = g / L
