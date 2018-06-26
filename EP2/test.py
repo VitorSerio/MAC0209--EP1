@@ -46,6 +46,32 @@ def frange(start, stop, step=1.0):
     while i < stop:
         yield i
         i += step
+        
+def erro(df, dft1, dft2, x):
+    e1 = []
+    e2 = []
+    
+    for i in range(len(df)):
+        j = math.floor(df['time'][i] * 1000)
+        e1.append(df[x][i] - dft1[x][j])
+        e2.append(df[x][i] - dft2[x][j])
+        
+    df[x + '_e1'] = e1
+    df[x + '_e2'] = e2
+    
+#def plot modelos(df, dft, x, u = 1, v = 1, i = 1, m = 1, label = '', unit = ''):
+#    plt.subplot(u, v, i)
+#    plt.ylabel(label + ' (' + unit + ')')
+#    plt.xlabel('Tempo (s)')
+#    plt.scatter(df[x], color = 'black')
+#    plt.plot(dft[x], color = 'C' + str(m))
+#    
+#    plt.subplot(u, v, i+v)
+#    plt.ylabel('Erro (' + unit + ')')
+#    plt.xlabel('Tempo (s)')
+#    plt.scatter(df[x + '_e' + str(m)], color = 'C' + str(m))
+#    plt.plot([0, max(df['time'])], [0, 0], color = 'red')
+    
 
 ##################################
 #            DADOS               #
@@ -108,17 +134,18 @@ for i in range(5):
 tmin_r = [4.7, 2.9, 6.2, 4.6, 4.5]  # tempos iniciais estimados (s)
 
 for i in range(5):
-    # removendo variáveis que não serão utilizadas        
-    r[i] = r[i].filter(items=['time', 'gFx']) 
-    # removendo dados antes do tempo inicial estimado              
+    # removendo variáveis que não serão utilizadas
+    r[i] = r[i].filter(items=['time', 'gFx'])
+    r[i].columns = ['time', 'a']
+    # removendo dados antes do tempo inicial estimado
     r[i] = r[i].loc[r[i]['time'] >= tmin_r[i]]
-    r[i] = r[i].reset_index()
+    r[i] = r[i].reset_index(drop = True)
     # convertendo valores para m/s^2
-    r[i].update(pd.Series(r[i]['gFx'] * g, name = 'gFx'))  
+    r[i].update(pd.Series(r[i]['a'] * g, name = 'a'))  
     # 'zerando' o tempo
     r[i].update(pd.Series(r[i]['time'] - tmin_r[i], name = 'time'))
     # calculando as velocidades experimentais
-    r[i]['v'] = integrate(r[i]['time'], r[i]['gFx'])
+    r[i]['v'] = integrate(r[i]['time'], r[i]['a'])
     # calculando o deslocamento experimental
     r[i]['d'] = integrate(r[i]['time'], r[i]['v'])
     # filtrando dados com deslocamento maior que o tamanho total da rampa
@@ -143,19 +170,20 @@ tmin_p = [7.05, 5.15, 5.2, 5.15, 5.3]   # tempos iniciais estimados (s)
 for i in range(5):
     # removendo variáveis que não serão utilizadas
     p[i] = p[i].filter(items=['time', 'wx'])
+    p[i].columns = ['time', 'w']
     # removendo dados fora do intervalo alvo
     p[i] = p[i].loc[(p[i]['time'] >= tmin_p[i]) & (p[i]['time'] <= tmin_p[i] + 30)]
-    p[i] = p[i].reset_index()
+    p[i] = p[i].reset_index(drop = True)
     # 'zerando' o tempo
     p[i].update(pd.Series(p[i]['time'] - tmin_p[i], name = 'time'))
     # calculando a inclinação experimental
-    p[i]['theta'] = integrate(p[i]['time'], p[i]['wx'])
+    p[i]['theta'] = integrate(p[i]['time'], p[i]['w'])
     # estimando a inclinação inicial
     theta0.append(max(p[i]['theta']) / 2)
     # recalculando a inclinação experimental
-    p[i].update(pd.Series(integrate(p[i]['time'], p[i]['wx'], y0 = -theta0[i]), name = 'theta'))
+    p[i].update(pd.Series(integrate(p[i]['time'], p[i]['w'], y0 = -theta0[i]), name = 'theta'))
     # calculando a aceleração angular
-    p[i]['a'] = derivate(p[i]['time'], p[i]['wx'], y0 = g * math.sin(theta0[i]) / L)
+    p[i]['a'] = derivate(p[i]['time'], p[i]['w'], y0 = g * math.sin(theta0[i]) / L)
 
 ##################################
 #     GRAFICOS EXPERIMENTAIS     #
@@ -167,7 +195,7 @@ plt.figure(figsize = (25, 15), facecolor = '#FFFFFF')
 plt.suptitle('Valores experimentais para os experimentos de Bloco em Rampa')
 for i in range(5):
     plt.subplot(3, 5, i+1)
-    plt.plot(r[i]['time'], r[i]['gFx'])
+    plt.plot(r[i]['time'], r[i]['a'])
     plt.xlabel('Tempo (s)')
     plt.ylabel(r'Aceleração (m/s$^2$)')
     plt.title('r' + str(i+1))
@@ -212,7 +240,7 @@ for i in range(5):
     plt.title('p' + str(i+1))
     
     plt.subplot(3, 5, i+6)
-    plt.plot(p[i]['time'], p[i]['wx'])
+    plt.plot(p[i]['time'], p[i]['w'])
     plt.xlabel('Tempo (s)')
     plt.ylabel('Velocidade Angular (rad/s)')
     
@@ -234,16 +262,16 @@ for i in range(1,5):
     re = re.append(r[i], ignore_index = True)
     ce = ce.append(c[i], ignore_index = True)
     pe = pe.append(p[i], ignore_index = True)
-    
-dt = 0.001
 
 ########## Bloco em rampa #########
 
-Br = 0.2 * par * Ar / mr
+Br = par * Ar / mr * 4
 Ar = g * math.sin(thetar)
 
 tmax = max(re['time'])
-    
+
+dt = 0.001
+
 eur1 = pd.DataFrame({'time' : list(frange(0.0, tmax, dt)),
                     'd' : 0.0,
                     'v' : 0.0,
@@ -268,39 +296,15 @@ eur2['v'][0] = 0.0
 eur2['a'][0] = Ar
     
 for i in range(1, len(eur2)):
-    eur2['a'][i] = Ar - Br * eur2['v'][i-1] ** 2
-    eur2['v'][i] = eur2['v'][i-1] + eur2['a'][i] * dt
-    eur2['d'][i] = eur2['d'][i-1] + eur2['v'][i] * dt
+    vmid = eur2['v'][i-1] + eur2['a'][i-1] * dt / 2
+    amid = Ar - Br * vmid ** 2
+    eur2['v'][i] = eur2['v'][i-1] + amid * dt
+    eur2['d'][i] = eur2['d'][i-1] + vmid * dt
+    eur2['a'][i] = Ar - Br * eur2['v'][i] ** 2
     
-e1 = []
-e2 = []
-
-for i in range(len(re)):
-    e1.append(re['d'][i] - eur1['d'][math.floor(re['time'][i] * 1000)])
-    e2.append(re['d'][i] - eur2['d'][math.floor(re['time'][i] * 1000)])
-    
-re['d_e1'] = e1
-re['d_e2'] = e2
-
-e1 = []
-e2 = []
-
-for i in range(len(re)):
-    e1.append(re['v'][i] - eur1['v'][math.floor(re['time'][i] * 1000)])
-    e2.append(re['v'][i] - eur2['v'][math.floor(re['time'][i] * 1000)])
-    
-re['v_e1'] = e1
-re['v_e2'] = e2
-
-e1 = []
-e2 = []
-
-for i in range(len(re)):
-    e1.append(re['gFx'][i] - eur1['a'][math.floor(re['time'][i] * 1000)])
-    e2.append(re['gFx'][i] - eur2['a'][math.floor(re['time'][i] * 1000)])
-    
-re['a_e1'] = e1
-re['a_e2'] = e2
+erro(re, eur1, eur2, 'd')
+erro(re, eur1, eur2, 'v')
+erro(re, eur1, eur2, 'a')
 
 
 ############### MCU ###############
@@ -316,6 +320,7 @@ euc1['theta'][0] = 0.0
     
 for i in range(1, len(euc1)):
     euc1['theta'][i] = euc1['theta'][i-1] + wc * dt
+euc1['w'] = wc
 
 euc2 = pd.DataFrame({'time' : list(frange(0.0, tmax, dt)),
                     'theta' : 0.0})
@@ -324,20 +329,14 @@ euc2['theta'][0] = 0.0
     
 for i in range(1, len(euc2)):
     euc2['theta'][i] = euc2['theta'][i-1] + wc * dt
+euc2['w'] = wc
     
-e1 = []
-e2 = []
-
-for i in range(len(ce)):
-    e1.append(ce['theta'][i] - euc1['theta'][math.floor(ce['time'][i] * 1000)])
-    e2.append(ce['theta'][i] - euc2['theta'][math.floor(ce['time'][i] * 1000)])
-    
-ce['theta_e1'] = e1
-ce['theta_e2'] = e2
+erro(ce, euc1, euc2, 'theta')
+erro(ce, euc1, euc2, 'w')
 
 ############# Pêndulo #############
 
-Bp = 0.2 * par * Ap * L / mp
+Bp = par * Ap * L / mp
 thetap0 = np.mean(theta0)
 Ap = g / L
 
@@ -371,35 +370,9 @@ for i in range(1, len(eup2)):
     eup2['w'][i] = eup2['w'][i-1] + eup2['a'][i] * dt
     eup2['theta'][i] = eup2['theta'][i-1] + eup2['w'][i] * dt
     
-e1 = []
-e2 = []
-
-for i in range(len(pe)):
-    e1.append(pe['theta'][i] - eup1['theta'][math.floor(pe['time'][i] * 1000)])
-    e2.append(pe['theta'][i] - eup2['theta'][math.floor(pe['time'][i] * 1000)])
-    
-pe['theta_e1'] = e1
-pe['theta_e2'] = e2
-
-e1 = []
-e2 = []
-
-for i in range(len(pe)):
-    e1.append(pe['wx'][i] - eup1['w'][math.floor(pe['time'][i] * 1000)])
-    e2.append(pe['wx'][i] - eup2['w'][math.floor(pe['time'][i] * 1000)])
-    
-pe['w_e1'] = e1
-pe['w_e2'] = e2
-
-e1 = []
-e2 = []
-
-for i in range(len(pe)):
-    e1.append(pe['a'][i] - eup1['a'][math.floor(pe['time'][i] * 1000)])
-    e2.append(pe['a'][i] - eup2['a'][math.floor(pe['time'][i] * 1000)])
-    
-pe['a_e1'] = e1
-pe['a_e2'] = e2
+erro(pe, eup1, eup2, 'theta')
+erro(pe, eup1, eup2, 'w')
+erro(pe, eup1, eup2, 'a')
     
     
 ##################################
@@ -415,7 +388,7 @@ plt.suptitle('Resultado do modelo com seus respectivos erros para o experimento 
 
 plt.subplot(2, 3, 1)
 plt.title('Aceleração')
-plt.scatter(re['time'], re['gFx'], s = 1)
+plt.scatter(re['time'], re['a'], s = 1)
 plt.plot(eur1['time'], eur1['a'], color = 'C2')
 plt.plot(eur2['time'], eur2['a'], color = 'C1')
 plt.ylabel(r'Aceleração (m/s$^2$)')
@@ -498,12 +471,11 @@ plt.xlabel('Tempo (s)')
 
 plt.subplot(2, 3, 2)
 plt.title('Velocidade Angular')
-plt.scatter(pe['time'], pe['wx'], s = 1)
+plt.scatter(pe['time'], pe['w'], s = 1)
 plt.plot(eup1['time'], eup1['w'], color = 'C2')
-#plt.plot(eup2['time'], eup2['w'], color = 'C1')
+plt.plot(eup2['time'], eup2['w'], color = 'C1')
 plt.ylabel('Velocidade angular (rad/s)')
 plt.xlabel('Tempo (s)')
-plt.show()
 
 plt.subplot(2, 3, 3)
 plt.title('Inclinação')
