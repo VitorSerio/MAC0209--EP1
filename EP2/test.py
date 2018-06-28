@@ -59,18 +59,70 @@ def erro(df, dft1, dft2, x):
     df[x + '_e1'] = e1
     df[x + '_e2'] = e2
     
-#def plot modelos(df, dft, x, u = 1, v = 1, i = 1, m = 1, label = '', unit = ''):
-#    plt.subplot(u, v, i)
-#    plt.ylabel(label + ' (' + unit + ')')
-#    plt.xlabel('Tempo (s)')
-#    plt.scatter(df[x], color = 'black')
-#    plt.plot(dft[x], color = 'C' + str(m))
-#    
-#    plt.subplot(u, v, i+v)
-#    plt.ylabel('Erro (' + unit + ')')
-#    plt.xlabel('Tempo (s)')
-#    plt.scatter(df[x + '_e' + str(m)], color = 'C' + str(m))
-#    plt.plot([0, max(df['time'])], [0, 0], color = 'red')
+def plot_experimentos(df, x, labels = '', units = '', exp = ''):
+    h = len(x)
+    fig, plots = plt.subplots(h, 5, sharex = 'col', sharey = 'row')
+    fig.set_figwidth(20)
+    fig.set_figheight(4 * h)
+    fig.subplots_adjust(hspace = 0.05, wspace = 0, top = 0.93)
+    fig.suptitle('Valores experimentais para os experimentos de ' + exp)
+    fig.set_facecolor('#FFFFFF')
+    for i in range(5):
+        j = 0
+        plots[j, i].scatter(df[i]['time'], df[i][x[j]], s = 1 if h == 3 else 10)
+        plots[j, i].set_title('Experimento ' + str(i+1))
+        
+        if h == 3:
+            j += 1
+            plots[j, i].scatter(df[i]['time'], df[i][x[j]], s = 1)
+        
+        j += 1 
+        plots[j, i].scatter(df[i]['time'], df[i][x[j]], s = 1 if h == 3 else 10)
+        plots[j, i].set_xlabel('Tempo (s)')
+        
+    j = 0
+    plots[j, 0].set_ylabel(labels[j] + ' (' + units[j] + ')')
+    
+    if h == 3:
+        j += 1
+        plots[j, 0].set_ylabel(labels[j] + ' (' + units[j] + ')')
+    
+    j += 1
+    plots[j, 0].set_ylabel(labels[j] + ' (' + units[j] + ')')
+    
+    plt.show()
+   
+def plot_modelos(df, dft1, dft2, x, labels = '', units = '', exp = ''):
+    def plot_modelo(plots, df, dft, x, i = 0, m = 1):
+        i *= 2
+        m -= 1
+        plots[i, m].scatter(df['time'], df[x], s = 1)
+        plots[i, m].plot(dft['time'], dft[x], color = 'C1')
+        plots[i, m].set_xticklabels([])
+        
+        i += 1
+        plots[i, m].set_xlabel('Tempo (s)')
+        plots[i, m].scatter(df['time'], df[x + '_e' + str(m+1)], s = 1)
+        plots[i, m].plot([0, max(df['time'])], [0, 0], '--', color = 'C1')
+        
+    h = len(x)
+        
+    fig, plots = plt.subplots(2 * h, 2, sharey = 'row')
+    fig.set_figwidth(10)
+    fig.set_figheight(8 * h)
+    fig.subplots_adjust(wspace = 0, top = 0.93)
+    fig.suptitle('Comparação dos resultados do método de Euler com o método\nde Euler-Richardson para os experimentos de ' + exp)
+    fig.set_facecolor('#FFFFFF')
+    
+    plots[0, 0].set_title('Método de Euler')
+    plots[0, 1].set_title('Método de Euler-Richardson')
+    for i in range(h):
+        plot_modelo(plots, df, dft1, x[i], i = i, m = 1)
+        plot_modelo(plots, df, dft2, x[i], i = i, m = 2)
+        plots[2*i, 0].set_ylabel(labels[i] + ' (' + units[i] + ')')
+        plots[2*i+1, 0].set_ylabel('Erro de ' + labels[i] + ' (' + units[i] + ')')
+        
+    
     
 
 ##################################
@@ -188,67 +240,18 @@ for i in range(5):
 ##################################
 #     GRAFICOS EXPERIMENTAIS     #
 ##################################
-    
-########## Bloco em rampa #########
 
-plt.figure(figsize = (25, 15), facecolor = '#FFFFFF')
-plt.suptitle('Valores experimentais para os experimentos de Bloco em Rampa')
-for i in range(5):
-    plt.subplot(3, 5, i+1)
-    plt.plot(r[i]['time'], r[i]['a'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel(r'Aceleração (m/s$^2$)')
-    plt.title('r' + str(i+1))
-    
-    plt.subplot(3, 5, i+6)
-    plt.plot(r[i]['time'], r[i]['v'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Velocidade (m/s)')
-    
-    plt.subplot(3, 5, i+11)
-    plt.plot(r[i]['time'], r[i]['d'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Distância (m)')
-plt.show()
+########## Bloco em rampa #########    
+
+plot_experimentos(r, ['d', 'v', 'a'], labels = ['Deslocamento Linear', 'Velocidade Linear', 'Aceleração Linear'], units = ['m', 'm/s', r'm/s$^2$'], exp = 'Bloco em Rampa')
 
 ############### MCU ###############
 
-plt.figure(figsize = (25, 12), facecolor = '#FFFFFF')
-plt.suptitle('Valores experimentais para os experimentos de Movimento Circular Uniforme')
-for i in range(5):
-    plt.subplot(3, 5, i+1)
-    plt.scatter(c[i]['time'], c[i]['theta'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Deslocamento (rad)')
-    plt.title('c' + str(i+1))
-    
-    plt.subplot(3, 5, i+6)
-    plt.scatter(c[i]['time'], c[i]['w'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Velocidade Angular (rad/s)')
-plt.show()
+plot_experimentos(c, ['theta', 'w'], labels = ['Deslocamento Angular', 'Velocidade Angular'], units = ['rad', 'rad/s'], exp = 'Movimento Circular Uniforme')
 
-############# Pêndulo #############
+############# Pêndulo #############  
 
-plt.figure(figsize = (25, 15), facecolor = '#FFFFFF')
-plt.suptitle('Valores experimentais para os experimentos de Movimento Pendular')
-for i in range(5):
-    plt.subplot(3, 5, i+1)
-    plt.plot(p[i]['time'], p[i]['a'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel(r'Aceleração Angular (rad/s$^2$)')
-    plt.title('p' + str(i+1))
-    
-    plt.subplot(3, 5, i+6)
-    plt.plot(p[i]['time'], p[i]['w'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Velocidade Angular (rad/s)')
-    
-    plt.subplot(3, 5, i+11)
-    plt.plot(p[i]['time'], p[i]['theta'])
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Distância Angular (rad)')
-plt.show()
+plot_experimentos(p, ['theta', 'w', 'a'], labels = ['Deslocamento Angular', 'Velocidade Angular', 'Aceleração Angular'], units = ['rad', 'rad/s', r'rad/s$^2$'], exp = 'Movimento Pendular')
 
 ##################################
 #             MODELO             #
@@ -366,9 +369,12 @@ eup2['w'][0] = 0.0
 eup2['a'][0] = Ap * math.sin(thetap0)
     
 for i in range(1, len(eup2)):
-    eup2['a'][i] = -Ap * math.sin(eup2['theta'][i-1]) - Bp * eup2['w'][i] * abs(eup2['w'][i-1])
-    eup2['w'][i] = eup2['w'][i-1] + eup2['a'][i] * dt
-    eup2['theta'][i] = eup2['theta'][i-1] + eup2['w'][i] * dt
+    thetamid = eup2['theta'][i-1] + eup2['w'][i-1] * dt / 2
+    wmid = eup2['w'][i-1] + eup2['a'][i-1] * dt / 2
+    amid = -Ap * math.sin(thetamid) - Bp * wmid * abs(wmid)
+    eup2['theta'][i] = eup2['theta'][i-1] + wmid * dt
+    eup2['w'][i] = eup2['w'][i-1] + amid * dt
+    eup2['a'][i] = -Ap * math.sin(eup2['theta'][i]) - Bp * eup2['w'][i] * abs(eup2['w'][i])
     
 erro(pe, eup1, eup2, 'theta')
 erro(pe, eup1, eup2, 'w')
@@ -381,128 +387,12 @@ erro(pe, eup1, eup2, 'a')
 
 ########## Bloco em rampa #########
 
-tmax = max(re['time'])
-
-plt.figure(figsize = (15, 10), facecolor = '#FFFFFF')
-plt.suptitle('Resultado do modelo com seus respectivos erros para o experimento do Bloco em Rampa')
-
-plt.subplot(2, 3, 1)
-plt.title('Aceleração')
-plt.scatter(re['time'], re['a'], s = 1)
-plt.plot(eur1['time'], eur1['a'], color = 'C2')
-plt.plot(eur2['time'], eur2['a'], color = 'C1')
-plt.ylabel(r'Aceleração (m/s$^2$)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 2)
-plt.title('Velocidade')
-plt.scatter(re['time'], re['v'], s = 1)
-plt.plot(eur1['time'], eur1['v'], color = 'C2')
-plt.plot(eur2['time'], eur2['v'], color = 'C1')
-plt.ylabel('Velocidade (m/s)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 3)
-plt.title('Distância')
-plt.scatter(re['time'], re['d'], s = 1)
-plt.plot(eur1['time'], eur1['d'], color = 'C2')
-plt.plot(eur2['time'], eur2['d'], color = 'C1')
-plt.ylabel('Distância (m)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 4)
-plt.scatter(re['time'], re['a_e1'], s = 1)
-plt.scatter(re['time'], re['a_e2'], s = 1, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel(r'Erro (m/s$^2$)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 5)
-plt.scatter(re['time'], re['v_e1'], s = 1)
-plt.scatter(re['time'], re['v_e2'], s = 1, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel('Erro (m/s)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 6)
-plt.scatter(re['time'], re['d_e1'], s = 1)
-plt.scatter(re['time'], re['d_e2'], s = 1, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel('Erro (m)')
-plt.xlabel('Tempo (s)')
-plt.show()
+plot_modelos(re, eur1, eur2, ['d', 'v', 'a'], labels = ['Deslocamento Linear', 'Velocidade Linear', 'Aceleração Linear'], units = ['m', 'm/s', r'm/s$^2$'], exp = 'Bloco em Rampa')
 
 ############### MCU ###############
 
-tmax = max(ce['time'])
-
-plt.figure(figsize = (10, 5), facecolor = '#FFFFFF')
-plt.suptitle('Resultado do modelo com seus respectivos erros para o experimento do Movimento Circular Uniforme')
-
-plt.subplot(1, 2, 1)
-plt.scatter(ce['time'], ce['theta'], s = 1)
-plt.plot(euc1['time'], euc1['theta'], color = 'C2')
-plt.plot(euc2['time'], euc2['theta'], color = 'C1')
-plt.ylabel('Distância angular (m)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(1, 2, 2)
-plt.scatter(ce['time'], ce['theta_e1'], s = 10)
-plt.scatter(ce['time'], ce['theta_e2'], s = 10, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel('Erro (m)')
-plt.xlabel('Tempo (s)')
-plt.show()
+plot_modelos(ce, euc1, euc2, ['theta', 'w'], labels = ['Deslocamento Angular', 'Velocidade Angular'], units = ['rad', 'rad/s'], exp = 'Movimento Circular Uniforme')
 
 ############# Pêndulo #############  
 
-tmax = max(pe['time'])
-
-plt.figure(figsize = (15, 10), facecolor = '#FFFFFF')
-plt.suptitle('Resultado do modelo com seus respectivos erros para o experimento do Movimento Pendular')
-
-plt.subplot(2, 3, 1)
-plt.title('Aceleração Angular') 
-plt.scatter(pe['time'], pe['a'], s = 1)
-plt.plot(eup1['time'], eup1['a'], color = 'C2')
-plt.plot(eup2['time'], eup2['a'], color = 'C1')
-plt.ylabel(r'Aceleração angular (rad/s$^2$)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 2)
-plt.title('Velocidade Angular')
-plt.scatter(pe['time'], pe['w'], s = 1)
-plt.plot(eup1['time'], eup1['w'], color = 'C2')
-plt.plot(eup2['time'], eup2['w'], color = 'C1')
-plt.ylabel('Velocidade angular (rad/s)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 3)
-plt.title('Inclinação')
-plt.scatter(pe['time'], pe['theta'], s = 1)
-plt.plot(eup1['time'], eup1['theta'], color = 'C2')
-plt.plot(eup2['time'], eup2['theta'], color = 'C1')
-plt.ylabel('Inclinação (rad)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 4)
-plt.scatter(pe['time'], pe['a_e1'], s = 1)
-plt.scatter(pe['time'], pe['a_e2'], s = 1, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel(r'Erro (rad/s$^2$)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 5)
-plt.scatter(pe['time'], pe['w_e1'], s = 1)
-plt.scatter(pe['time'], pe['w_e2'], s = 1, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel('Erro (rad/s)')
-plt.xlabel('Tempo (s)')
-
-plt.subplot(2, 3, 6)
-plt.scatter(pe['time'], pe['theta_e1'], s = 1)
-plt.scatter(pe['time'], pe['theta_e2'], s = 1, color = 'C1')
-plt.plot([0, tmax], [0, 0], color = 'C2')
-plt.ylabel('Erro (rad)')
-plt.xlabel('Tempo (s)')
-plt.show()
+plot_modelos(pe, eup1, eup2, ['theta', 'w', 'a'], labels = ['Deslocamento Angular', 'Velocidade Angular', 'Aceleração Angular'], units = ['rad', 'rad/s', r'rad/s$^2$'], exp = 'Movimento Pendular')
