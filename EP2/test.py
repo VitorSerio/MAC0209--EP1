@@ -231,9 +231,9 @@ for i in range(5):
     # calculando a inclinação experimental
     p[i]['theta'] = integrate(p[i]['time'], p[i]['w'])
     # estimando a inclinação inicial
-    theta0.append(max(p[i]['theta']) / 2)
+    theta0.append(-max(p[i]['theta']) / 2)
     # recalculando a inclinação experimental
-    p[i].update(pd.Series(integrate(p[i]['time'], p[i]['w'], y0 = -theta0[i]), name = 'theta'))
+    p[i].update(pd.Series(integrate(p[i]['time'], p[i]['w'], y0 = theta0[i]), name = 'theta'))
     # calculando a aceleração angular
     p[i]['a'] = derivate(p[i]['time'], p[i]['w'], y0 = g * math.sin(theta0[i]) / L)
 
@@ -350,9 +350,9 @@ eup1 = pd.DataFrame({'time' : list(frange(0.0, tmax, dt)),
                     'w' : 0.0,
                     'a' : 0.0})
 
-eup1['theta'][0] = -thetap0
+eup1['theta'][0] = thetap0
 eup1['w'][0] = 0.0
-eup1['a'][0] = Ap * math.sin(thetap0)
+eup1['a'][0] = - Ap * math.sin(thetap0)
     
 for i in range(1, len(eup1)):
     eup1['theta'][i] = eup1['theta'][i-1] + eup1['w'][i-1] * dt
@@ -364,9 +364,9 @@ eup2 = pd.DataFrame({'time' : list(frange(0.0, tmax, dt)),
                     'w' : 0.0,
                     'a' : 0.0})
 
-eup2['theta'][0] = -thetap0
+eup2['theta'][0] = thetap0
 eup2['w'][0] = 0.0
-eup2['a'][0] = Ap * math.sin(thetap0)
+eup2['a'][0] = - Ap * math.sin(thetap0)
     
 for i in range(1, len(eup2)):
     thetamid = eup2['theta'][i-1] + eup2['w'][i-1] * dt / 2
